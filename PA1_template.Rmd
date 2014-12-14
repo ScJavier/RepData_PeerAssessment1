@@ -1,5 +1,6 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+Author: Javier Santibáñez
 output: 
   html_document:
     keep_md: true
@@ -7,11 +8,25 @@ output:
 
 
 ## Loading and preprocessing the data
+First we have to read the data.
+```{r}
+setwd('D:/ScJavier/Coursera/Data Sciencie Specialization/05_Reproducible_Research/Course_Project_1/RepData_PeerAssessment1/')
+if (!file.exists("activity.csv"))
+  {
+    unzip("activity.zip")
+  }
+data <- read.csv("activity.csv",stringsAsFactors=F)
+summary(data)
+```
+To process the data we'll use the `dplyr` package, to manage dates we'll use the `lubridate`, and to make the plot we'll use the `ggplot2` package.
+```{r}
+library(dplyr); library(lubridate); library(ggplot2)
+data<-tbl_df(data)
+data<-mutate(data,date=ymd(date))
 
-
+```
 
 ## What is mean total number of steps taken per day?
-
 
 
 ## What is the average daily activity pattern?
