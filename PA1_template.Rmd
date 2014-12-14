@@ -1,6 +1,7 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-Author: Javier Santibáñez
+author: "Javier Santibáñez"
+date: "Sunday, December 14, 2014"
 output: 
   html_document:
     keep_md: true
@@ -23,18 +24,109 @@ To process the data we'll use the `dplyr` package, to manage dates we'll use the
 library(dplyr); library(lubridate); library(ggplot2)
 data<-tbl_df(data)
 data<-mutate(data,date=ymd(date))
-
 ```
 
 ## What is mean total number of steps taken per day?
+We have to plot an histogram of the total number of steps taken per day,so we have to sum of steps by days.
 
+```{r}
+plot1<-group_by(data,date) %>%
+       summarise(tsteps=sum(steps,na.rm=T))
+ggplot(plot1,aes(tsteps))+
+  geom_bar(fill="steelblue",color="black",binwidth=2000)+
+  labs(title="Histogram of total dialy steps")
+mean1<-round(mean(plot1$tsteps),0)
+median1<-round(median(plot1$tsteps),0)
+````
+
+We have computed a mean value of total steps of `r mean1` and a median value of `r median1`.
 
 ## What is the average daily activity pattern?
+Now, we have to compute the average dialy activity pattern, so we have to compute the mean of steps across days by 5-minutes interval.
 
-
+```{r}
+plot2<-group_by(data,interval) %>%
+       summarise(msteps=mean(steps,na.rm=T))
+ggplot(plot2,aes(interval,msteps))+
+  geom_line(color="steelblue",size=2)+
+  labs(title="Average dialy activity pattern")
+```
+Also, we have to find eh interval with the maximun of steps.
+```{r}
+max.steps<-arrange(plot2,desc(msteps))[1,]
+```
+The interval with the maximum number of steps is `r max.steps[1]` iand it has `r round(max.steps[2],2)` steps.
 
 ## Imputing missing values
+1. First we have to compute the number of rows with `NA`'s.
+```{r}
+missvals<-sum(is.na(data$steps))
+```
+The number of row with `NA`'s is `r missvals`.
 
+2. To impute the missing values we'll replace `NA` in a given interval for the mean number of steps in that 5-minutes interval accros days rounding to the nearest integer.
 
+3. Now, we have to create a new data set without missing values.
+
+```{r}
+data2<-data
+for (i in 1:dim(data)[1])
+{
+  if (is.na(data[i,1]))
+    {
+      temp<-select(data,interval,steps) %>%
+        filter(interval==as.numeric(data[i,3]))  %>%
+        summarise(steps=mean(steps,na.rm=T))
+      data2[i,1]<-temp
+    } 
+}
+```
+
+We can verify there are not missing values.
+```{r}
+summary(data2)
+```
+
+4. Finally, we have to make an histogram of the total of steps taken per day without missing values and we have to compute the new mean and median.
+```{r}
+plot3<-group_by(data2,date) %>%
+       summarise(tsteps=sum(steps,na.rm=T))
+ggplot(plot3,aes(tsteps))+
+  geom_bar(fill="steelblue",color="black",binwidth=2000)+
+  labs(title="Histogram of total dialy steps")
+mean2<-round(mean(plot3$tsteps),0)
+median2<-round(median(plot3$tsteps),0)
+```
+- The original mean of total steps was `r mean1`, now, without missing values the mean is `r mean2`. The second value is greater than the first one.
+- The original median of total steps was `r median1`, now, without missing values the median is `r median2`. The values do not seem too different.
+- The main difference after imputation is that the distribution of the data is more symmetric.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Finally we have to compare the daily pattern of steps of weekdays against weekends.
+
+```{r}
+data2$day<-rep(0,dim(data2)[1])
+for (i in 1:dim(data2)[1])
+{
+  if (wday(data2$date[i]) %in% c(1,7))
+  {
+    data2$day[i]<-"Weekend"    
+  }
+  if (wday(data2$date[i]) %in% c(2:6))
+  {
+    data2$day[i]<-"Weekday"    
+  }
+}
+data2<-mutate(data2,day=as.factor(day))
+
+plot4<-group_by(data2,day,interval) %>%
+  summarise(msteps=mean(steps))
+
+ggplot(plot4,aes(interval,msteps))+
+  geom_line(color="steelblue",size=2)+
+  facet_grid(day~.)+
+  labs(title="Average dialy activity pattern")
+```
+
+
